@@ -3,21 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Ma Carte Interactive</title>
+  <title>Test Carte</title>
   
-  <link rel="stylesheet" href="https://unpkg.com" />
-  <script src="https://unpkg.com"></script>
+  <!-- Chargement depuis Cloudflare (souvent plus fiable sur mobile) -->
+  <link rel="stylesheet" href="https://cloudflare.com" />
+  <script src="https://cloudflare.com"></script>
   
   <style>
     body, html { margin: 0; padding: 0; height: 100%; width: 100%; }
     #map { height: 100%; width: 100%; background: #e5e5e5; }
+    #debug { position: fixed; top: 10px; left: 50px; right: 10px; background: #ffdddd; color: #900; padding: 10px; z-index: 9999; font-family: sans-serif; display: none; border: 1px solid red; }
   </style>
 </head>
 <body>
 
+  <div id="debug"></div>
   <div id="map"></div>
 
   <script>
+    // Affiche toute erreur directement à l'écran
+    window.onerror = function(msg, url, line) {
+      var box = document.getElementById('debug');
+      box.style.display = 'block';
+      box.innerHTML += "<b>Erreur :</b> " + msg + " (ligne " + line + ")<br>";
+    };
+
+    if (typeof L === 'undefined') {
+      throw new Error("La bibliothèque Leaflet n'a pas pu être téléchargée.");
+    }
+
     var map = L.map('map', {
       crs: L.CRS.Simple,
       minZoom: -3,
@@ -36,7 +50,7 @@
 
     L.marker([hauteur / 2, largeur / 2])
       .addTo(map)
-      .bindPopup("<b>Bienvenue !</b><br>Zoomez pour explorer.");
+      .bindPopup("<b>Ça fonctionne !</b>");
   </script>
 
 </body>
