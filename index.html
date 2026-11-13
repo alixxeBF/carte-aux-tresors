@@ -2,32 +2,132 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <!-- Permet de zoomer librement avec les doigts sur téléphone et iPad -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=10.0, user-scalable=yes" />
-  <title>Mon Illustration</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Illustration Zoom Infini</title>
   <style>
     body, html {
       margin: 0;
       padding: 0;
       width: 100%;
       height: 100%;
-      background-color: #ffffff;
+      overflow: hidden;
+      background-color: #f4f4f4;
+      touch-action: none; /* Empêche le zoom limité du navigateur */
+    }
+    #container {
+      width: 100%;
+      height: 100%;
       display: flex;
       justify-content: center;
       align-items: center;
+      cursor: grab;
     }
-    img {
-      /* L'image s'adapte à l'écran au départ sans être coupée */
-      max-width: 100%;
-      max-height: 100%;
-      width: auto;
-      height: auto;
+    #container:active {
+      cursor: grabbing;
+    }
+    #carte {
+      max-width: 95%;
+      max-height: 95%;
+      transform-origin: 0 0;
+      will-change: transform;
     }
   </style>
 </head>
 <body>
 
-  <img src="carte.svg" alt="Illustration vectorielle" />
+  <div id="container">
+    <img id="carte" src="carte.svg" alt="Illustration vectorielle" draggable="false" />
+  </div>
+
+  <script>
+    const img = document.getElementById('carte');
+    const container = document.getElementById('container');
+
+    let scale = 1;
+    let pointX = 0;
+    let pointY = 0;
+    let start = { x: 0, y: 0 };
+    let panning = false;
+    let initialDistance = 0;
+    let initialScale = 1;
+
+    // Modifiez ce chiffre pour zoomer encore plus (ex: 50)
+    const MAX_ZOOM = 30; 
+    const MIN_ZOOM = 0.5;
+
+    function setTransform() {
+      img.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`;
+    }
+
+    // Zoom à la molette (Ordinateur)
+    container.onwheel = function (e) {
+      e.preventDefault();
+      const xs = (e.clientX - pointX) / scale;
+      const ys = (e.clientY - pointY) / scale;
+      const delta = (e.wheelDelta ? e.wheelDelta : -e.deltaY);
+      
+      (delta > 0) ? (scale *= 1.2) : (scale /= 1.2);
+      scale = Math.min(Math.max(MIN_ZOOM, scale), MAX_ZOOM);
+
+      pointX = e.clientX - xs * scale;
+      pointY = e.clientY - ys * scale;
+      setTransform();
+    };
+
+    // Déplacement à la souris (Ordinateur)
+    container.onmousedown = function (e) {
+      e.preventDefault();
+      start = { x: e.clientX - pointX, y: e.clientY - pointY };
+      panning = true;
+    };
+    container.onmouseup = () => panning = false;
+    container.onmousemove = function (e) {
+      if (!panning) return;
+      pointX = e.clientX - start.x;
+      pointY = e.clientY - start.y;
+      setTransform();
+    };
+
+    // Gestion tactile : 1 doigt pour bouger, 2 doigts pour zoomer (Mobile / iPad)
+    container.addEventListener('touchstart', function(e) {
+      if (e.touches.length === 1) {
+        panning = true;
+        start = { x: e.touches[0].clientX - pointX, y: e.touches[0].clientY - pointY };
+      } else if (e.touches.length === 2) {
+        panning = false;
+        initialDistance = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        initialScale = scale;
+      }
+    });
+
+    container.addEventListener('touchmove', function(e) {
+      e.preventDefault();
+      if (e.touches.length === 1 && panning) {
+        pointX = e.touches[0].clientX - start.x;
+        pointY = e.touches[0].clientY - start.y;
+        setTransform();
+      } else if (e.touches.length === 2) {
+        const currentDistance = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        const xs = (midX - pointX) / scale;
+        const ys = (midY - pointY) / scale;
+
+        scale = Math.min(Math.max(MIN_ZOOM, initialScale * (currentDistance / initialDistance)), MAX_ZOOM);
+        pointX = midX - xs * scale;
+        pointY = midY - ys * scale;
+        setTransform();
+      }
+    });
+
+    container.addEventListener('touchend', () => panning = false);
+  </script>
 
 </body>
 </html>
